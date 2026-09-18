@@ -1,0 +1,67 @@
+name: Build ReimiePay Nigeria
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+      - run: |
+          flutter create. --project-name reimiepay --org com.reimiepay.app --platforms=android
+          flutter pub add google_mobile_ads
+          sed -i '/<application/a \ <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-7817232546318110~1436395195"\/>' android/app/src/main/AndroidManifest.xml
+          cat > lib/main.dart << 'EOF'
+          import 'package:flutter/material.dart';
+          import 'package:google_mobile_ads/google_mobile_ads.dart';
+          void main(){ WidgetsFlutterBinding.ensureInitialized(); MobileAds.instance.initialize(); runApp(const MaterialApp(debugShowCheckedModeBanner:false, home:LoginPage())); }
+          class LoginPage extends StatefulWidget{ const LoginPage({super.key}); @override State<LoginPage> createState()=>_LoginPageState(); }
+          class _LoginPageState extends State<LoginPage>{
+            BannerAd? b; bool loaded=false;
+            @override void initState(){ super.initState(); b=BannerAd(adUnitId:'ca-app-pub-7817232546318110/3023230023', size:AdSize.banner, request:const AdRequest(), listener:BannerAdListener(onAdLoaded:(_)=>setState(()=>loaded=true), onAdFailedToLoad:(a,e)=>a.dispose()))..load(); }
+            @override Widget build(BuildContext context){
+              return Scaffold(backgroundColor:const Color(0xFF4A148C), bottomNavigationBar:loaded?Container(color:Colors.white,height:b!.size.height.toDouble(),child:AdWidget(ad:b!)):const SizedBox(height:50),
+                body:SafeArea(child:SingleChildScrollView(padding:const EdgeInsets.all(24), child:Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
+                  const Text('🇳🇬 NIGERIA ONLY', style:TextStyle(color:Colors.greenAccent,fontWeight:FontWeight.bold)),
+                  const Text('Welcome to', style:TextStyle(color:Colors.white70,fontSize:18)),
+                  const Text('ReimiePay', style:TextStyle(color:Colors.white,fontSize:36,fontWeight:FontWeight.bold)),
+                  const Text('Cheapest Data in Nigeria', style:TextStyle(color:Colors.white70)),
+                  const SizedBox(height:30),
+                  Container(padding:const EdgeInsets.all(20), decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(20)), child:Column(children:[
+                    const TextField(decoration:InputDecoration(labelText:'Email', border:OutlineInputBorder())),
+                    const SizedBox(height:12), const TextField(obscureText:true, decoration:InputDecoration(labelText:'Password', border:OutlineInputBorder())),
+                    const SizedBox(height:20),
+                    SizedBox(width:double.infinity, height:50, child:ElevatedButton(style:ElevatedButton.styleFrom(backgroundColor:const Color(0xFF6A1B9A)), onPressed:()=>Navigator.pushReplacement(context, MaterialPageRoute(builder:(_)=>const HomePage())), child:const Text('LOGIN', style:TextStyle(color:Colors.white)))),
+                    TextButton(onPressed:()=>Navigator.push(context, MaterialPageRoute(builder:(_)=>const RegisterPage())), child:const Text('No account? Register here')),
+                  ])),
+                ]))),
+              );
+            }
+          }
+          class RegisterPage extends StatelessWidget{ const RegisterPage({super.key}); @override Widget build(BuildContext c){
+            return Scaffold(backgroundColor:const Color(0xFF4A148C), appBar:AppBar(backgroundColor:Colors.transparent, elevation:0, leading:IconButton(icon:const Icon(Icons.arrow_back,color:Colors.white), onPressed:()=>Navigator.pop(c))),
+              body:SafeArea(child:Padding(padding:const EdgeInsets.all(24), child:Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
+                const Text('🇳🇬 Nigeria Only - Create Account', style:TextStyle(color:Colors.white70)), const Text('Register', style:TextStyle(color:Colors.white,fontSize:32,fontWeight:FontWeight.bold)), const SizedBox(height:20),
+                Container(padding:const EdgeInsets.all(20), decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(20)), child:Column(children:[
+                  const TextField(decoration:InputDecoration(labelText:'Full Name', border:OutlineInputBorder())), const SizedBox(height:12),
+                  const TextField(decoration:InputDecoration(labelText:'Phone +234', prefixText:'+234 ', border:OutlineInputBorder())), const SizedBox(height:12),
+                  const TextField(decoration:InputDecoration(labelText:'Email', border:OutlineInputBorder())), const SizedBox(height:12),
+                  const TextField(obscureText:true, decoration:InputDecoration(labelText:'Password', border:OutlineInputBorder())), const SizedBox(height:20),
+                  SizedBox(width:double.infinity, height:50, child:ElevatedButton(style:ElevatedButton.styleFrom(backgroundColor:const Color(0xFF6A1B9A)), onPressed:()=>Navigator.pushReplacement(c, MaterialPageRoute(builder:(_)=>const HomePage())), child:const Text('REGISTER - NIGERIA ONLY', style:TextStyle(color:Colors.white)))),
+                ])),
+              ]))),
+            );
+          }
+          class HomePage extends StatefulWidget{ const HomePage({super.key}); @override State<HomePage> createState()=>_HomePageState(); }
+          class _HomePageState extends State<HomePage>{
+            BannerAd? b; bool loaded=false;
+            @override void initState(){ super.initState(); b=BannerAd(adUnitId:'ca-app-pub-7817232546318110/3023230023', size:AdSize.banner, request:const AdRequest(), listener:BannerAdListener(onAdLoaded:(_)=>setState(()=>loaded=true), onAdFailedToLoad:(a,e)=>a.dispose()))..load(); }
+            @override Widget build(BuildContext c){ return Scaffold(backgroundColor:const Color(0xFF4A148C), appBar:AppBar(title:const Text('🇳🇬 ReimiePay NG')), bottomNavigationBar:loaded?Container(color:Colors.white,height:b!.size.height.toDouble(),child:AdWidget(ad:b!)):null, body:Center(child:Container(margin:const EdgeInsets.all(20), padding:const EdgeInsets.all(20), decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(20)), child:const Column(mainAxisSize:MainAxisSize.min, children:[Text('Welcome Back!'), SizedBox(height:10), Text('MTN ₦300 | Glo ₦280 | Airtel ₦320 | 9mobile ₦350'), SizedBox(height:10), Text('🇳🇬 Nigeria Only - Cheapest Data', style:TextStyle(fontSize:11))] )))); }
+          }
+          EOF
+          flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reimiepay-nigeria-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
